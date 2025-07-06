@@ -2,14 +2,30 @@ import pygame as py
 import sys
 import os
 
+from scene_manager import SceneManager
+from src.scenes import character_select
+from src.scenes.level_scene import LevelScene
+from config import CONSTANTS, LEVELS_DIR
+
 def main():
     py.init()
 
-    screen_size = (800, 600)
+    screen_config = CONSTANTS["screen"]
+    screen_size = (screen_config["width"], screen_config["height"])
     screen = py.display.set_mode(screen_size, py.RESIZABLE)
-    py.display.set_caption("game")
-
+    py.display.set_caption("Game")
     clock = py.time.Clock()
+
+    scene_manager = SceneManager.get_instance()
+
+    for file in os.listdir(LEVELS_DIR):
+        if file.endswith(".json"):
+            level_id = file.replace(".json", "")
+            scene = LevelScene(level_id)
+            scene_manager.add(level_id, scene)
+
+    scene_manager.add("character_select", character_select.CharacterSelect(default_next="level1"))
+    scene_manager.set_scene("character_select")
 
     running = True
     while running:
@@ -20,22 +36,19 @@ def main():
                 screen_size = event.size
                 screen = py.display.set_mode(screen_size, py.RESIZABLE)
 
+            scene_manager.handle_event(event)
+
+        scene_manager.update()
+
+        if hasattr(scene_manager.current_scene, 'update_layout'):
+            scene_manager.current_scene.update_layout(screen_size)
+
+        scene_manager.render(screen)
         py.display.flip()
-        clock.tick(60)
+        clock.tick(CONSTANTS["FPS"])
 
     py.quit()
     sys.exit()
 
 if __name__ == "__main__":
     main()
-
-#тут кароче игра лол
-
-# 　　　　　／＞　 フ
-# 　　　　　| 　_　 _|
-# 　 　　　／`ミ _x 彡
-# 　　 　 /　　　 　 |
-# 　　　 /　 ヽ　　 ﾉ
-# 　／￣|　　 |　|　|
-# 　| (￣ヽ＿_ヽ_)_)
-# 　＼二つ

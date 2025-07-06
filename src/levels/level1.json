@@ -1,0 +1,11 @@
+{
+  "id": "level1",
+  "world_size": [800, 600],
+  "background_color": [40, 40, 40],
+  "player_spawn": {
+    "player1": [50, 550],
+    "player2": [750, 50]
+  },
+  "weapons": [],
+  "enemies": []
+}
