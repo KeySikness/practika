@@ -31,6 +31,7 @@ class IntroductionScene:
         self.window_size = (1600, 900)
         self.skip_hint_font = pygame.font.SysFont("Comic Sans MS", 24, bold=True)
         self.skip_hint_text = self.skip_hint_font.render("Чтобы пропустить нажмите ESC", True, (255, 255, 255))
+        self.space_hint_text = self.skip_hint_font.render("Чтобы продолжить нажмите SPACE", True, (255, 255, 255))
 
     def on_enter(self):
         self.index = 0
@@ -53,6 +54,8 @@ class IntroductionScene:
     def render(self, screen):
         screen.fill(self.bg_color)
         screen.blit(self.skip_hint_text, (20, 20))
+        screen.blit(self.space_hint_text, (20, 50))
+
         w, h = self.window_size
         dialogue_box = pygame.Surface((w, self.box_height))
         dialogue_box.fill(self.box_color)
