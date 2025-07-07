@@ -1,0 +1,43 @@
+{
+  "player_stats": {
+    "woman": {
+      "speed": 5,
+      "health": 70,
+      "color": [255, 100, 100],
+      "inventory_limit": 2
+    },
+    "man": {
+      "speed": 3,
+      "health": 100,
+      "color": [100, 100, 255],
+      "inventory_limit": 3
+    }
+  },
+  "screen": {
+    "width": 800,
+    "height": 600
+  },
+  "FPS": 60,
+  "enemy": {
+    "size": 40,
+    "attack_delay": 1000,
+    "min_spawn_distance": 150,
+    "speed": 1.5,
+    "health_range": [3, 15],
+    "damage": 1
+  },
+  "weapons": {
+    "types": ["fist", "melee_bat", "melee_axe", "melee_knife", "melee_club", "shotgun", "molotov", "boomerang", "yoyo"],
+    "stats": {
+      "fist":          { "name": "кулаки", "damage": 1, "cooldown": 500 },
+      "melee_bat":   { "name": "бита","damage": 5, "cooldown": 800 },
+      "melee_axe":     { "name": "топор","damage": 10, "cooldown": 1000 },
+      "melee_knife":   { "name": "нож","damage": 2, "cooldown": 500 },
+      "melee_club":    { "name": "клюшка","damage": 3, "cooldown": 800 },
+      "shotgun":       { "name": "ружье","damage": 5, "cooldown": 1200 },
+      "molotov":       { "name": "молотов","damage": 5, "cooldown": 800 },
+      "boomerang":     { "name": "бумеранг","damage": 1, "cooldown": 700 },
+      "yoyo":          { "name": "йо-йо","damage": 1, "cooldown": 1200 }
+  }
+}
+}
