@@ -1,5 +1,6 @@
 import pygame
 from scene_manager import SceneManager
+from audio_manager import AudioManager
 
 class IntroductionScene:
     def __init__(self, next_scene="character_select"):
@@ -28,9 +29,12 @@ class IntroductionScene:
         self.box_height = 150
         self.next_scene = next_scene
         self.window_size = (1600, 900)
+        self.skip_hint_font = pygame.font.SysFont("Comic Sans MS", 24, bold=True)
+        self.skip_hint_text = self.skip_hint_font.render("Чтобы пропустить нажмите ESC", True, (255, 255, 255))
 
     def on_enter(self):
         self.index = 0
+        AudioManager.get_instance().play_music(AudioManager.get_instance().tracks["ambient"])
 
     def update_layout(self, window_size):
         self.window_size = window_size
@@ -40,12 +44,15 @@ class IntroductionScene:
             self.index += 1
             if self.index >= len(self.dialogues):
                 SceneManager.get_instance().set_scene(self.next_scene)
+        elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            SceneManager.get_instance().set_scene(self.next_scene)
 
     def update(self):
         pass
 
     def render(self, screen):
         screen.fill(self.bg_color)
+        screen.blit(self.skip_hint_text, (20, 20))
         w, h = self.window_size
         dialogue_box = pygame.Surface((w, self.box_height))
         dialogue_box.fill(self.box_color)

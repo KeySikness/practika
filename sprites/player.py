@@ -1,5 +1,5 @@
 import pygame as py
-from config import CONSTANTS
+from config import CONSTANTS, LEVELS_DIR
 from sprites.weapons import Weapon
 
 class Player:
@@ -71,7 +71,7 @@ class Player:
             return self.inventory[self.current_weapon_index]
         return None
 
-    def handle_keys(self):
+    def handle_keys(self, level_width, level_height):
         if getattr(self, "stunned", False):
             return
 
@@ -93,6 +93,16 @@ class Player:
             self.facing_angle = py.Vector2(dx, dy).angle_to(py.Vector2(1, 0))
 
         self.rect.move_ip(dx, dy)
+
+        if self.rect.left < 0:
+            self.rect.left = 0
+        elif self.rect.right > level_width:
+            self.rect.right = level_width
+
+        if self.rect.top < 0:
+            self.rect.top = 0
+        elif self.rect.bottom > level_height:
+            self.rect.bottom = level_height
 
     def draw(self, surface):
         py.draw.rect(surface, self.color, self.rect)

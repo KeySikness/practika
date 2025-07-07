@@ -1,27 +1,31 @@
 import pygame
 from scene_manager import SceneManager
+from audio_manager import AudioManager
 
 class Button:
     def __init__(self, rect, text, callback):
         self.rect = pygame.Rect(rect)
         self.text = text
         self.callback = callback
-        self.font = pygame.font.SysFont(None, 36)
+        self.font = pygame.font.SysFont("Comic Sans MS", 42)
         self.hover = False
 
     def set_position(self, rect):
         self.rect = pygame.Rect(rect)
 
     def draw(self, surface):
-        color = (180, 180, 180) if self.hover else (120, 120, 120)
-        pygame.draw.rect(surface, color, self.rect)
-        pygame.draw.rect(surface, (255, 255, 255), self.rect, 2)
-        text_surf = self.font.render(self.text, True, (255, 255, 255))
+        base_color = (108, 45, 45)
+        hover_color = (130, 52, 52)
+        border_color = (108, 45, 45)
+        color = hover_color if self.hover else base_color
+        pygame.draw.rect(surface, color, self.rect, border_radius=12)
+        pygame.draw.rect(surface, border_color, self.rect, 3, border_radius=12)
+        text_surf = self.font.render(self.text, True, (0, 0, 0))
         surface.blit(
             text_surf,
             (
-                self.rect.x + self.rect.w // 2 - text_surf.get_width() // 2,
-                self.rect.y + self.rect.h // 2 - text_surf.get_height() // 2,
+                self.rect.centerx - text_surf.get_width() // 2,
+                self.rect.centery - text_surf.get_height() // 2,
             ),
         )
 
@@ -33,9 +37,10 @@ class Button:
                 self.callback()
 
 
+
 class CharacterSelect:
     def __init__(self, default_next="level1"):
-        self.font = pygame.font.SysFont(None, 40)
+        self.font = pygame.font.SysFont("Comic Sans MS", 40)
         self.player1_choice = None
         self.player2_choice = None
         self.current_player = 1
@@ -78,6 +83,7 @@ class CharacterSelect:
         self.player2_choice = None
         self.current_player = 1
         self.make_buttons()
+        AudioManager.get_instance().play_music(AudioManager.get_instance().tracks["ambient"])
 
     def update_layout(self, window_size):
         self.window_size = window_size
@@ -95,5 +101,31 @@ class CharacterSelect:
         prompt = f"Игрок {self.current_player}, выбери своего бойца:"
         text = self.font.render(prompt, True, (255, 255, 255))
         screen.blit(text, (screen.get_width() // 2 - text.get_width() // 2, 100))
+
         for button in self.buttons:
             button.draw(screen)
+        desc_font = pygame.font.SysFont("Comic Sans MS", 28)
+
+        woman_text = "Женщина: 75 хп, быстрее, может носить 2 оружия"
+        man_text = "Мужчина: 100 хп, медленный, может носить 3 оружия"
+
+        woman_surf = desc_font.render(woman_text, True, (200, 200, 200))
+        man_surf = desc_font.render(man_text, True, (200, 200, 200))
+
+        last_button = self.buttons[-1]
+        base_y = last_button.rect.bottom + 40
+
+        screen.blit(
+            woman_surf,
+            (
+                screen.get_width() // 2 - woman_surf.get_width() // 2,
+                base_y,
+            )
+        )
+        screen.blit(
+            man_surf,
+            (
+                screen.get_width() // 2 - man_surf.get_width() // 2,
+                base_y + woman_surf.get_height() + 10,
+            )
+        )

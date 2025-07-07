@@ -7,6 +7,8 @@ from sprites.enemies import Enemy
 from sprites.weapons import Weapon
 from sprites.projectiles import MolotovEffect
 from config import CONSTANTS, LEVELS_DIR
+from audio_manager import AudioManager
+ENEMY_CONFIG = CONSTANTS["enemy"]
 
 
 class LevelScene:
@@ -26,6 +28,8 @@ class LevelScene:
         self.scale_y = 1
 
         self.load_level_data()
+        self.finished = False
+        self.playing_track = AudioManager.get_instance().play_random_level_music()
 
     def load_level_data(self):
         level_file = os.path.join(LEVELS_DIR, f"{self.level_id}.json")
@@ -34,6 +38,7 @@ class LevelScene:
 
     def on_enter(self):
         self.finished = False
+        self.playing_track = AudioManager.get_instance().play_random_level_music()
 
     def update_layout(self, window_size):
         self.window_size = window_size
@@ -63,13 +68,14 @@ class LevelScene:
         world_w, world_h = self.level_data["world_size"]
 
         for _ in range(num_weapons):
-            for _ in range(100):  # max attempts
+            for _ in range(100):
                 x = random.randint(32, world_w - 32)
                 y = random.randint(32, world_h - 32)
                 new_rect = py.Rect(x, y, 32, 32)
 
-                if all(not new_rect.colliderect(py.Rect(px, py_, 32, 32).inflate(100, 100)) for px, py_ in placed_positions) and \
-                   all(not new_rect.colliderect(p.rect.inflate(100, 100)) for p in self.players):
+                if all(not new_rect.colliderect(py.Rect(px, py_, 32, 32).inflate(100, 100)) for px, py_ in
+                       placed_positions) and \
+                        all(not new_rect.colliderect(p.rect.inflate(100, 100)) for p in self.players):
 
                     placed_positions.append((x, y))
                     weapon_type = random.choice([w for w in CONSTANTS["weapons"]["types"] if w != "fist"])
@@ -77,12 +83,24 @@ class LevelScene:
                     self.weapons.append(weapon)
 
                     for _ in range(random.randint(1, 3)):
-                        offset_x = random.randint(-80, 80)
-                        offset_y = random.randint(-80, 80)
-                        enemy_x = max(0, min(world_w - 40, x + offset_x))
-                        enemy_y = max(0, min(world_h - 40, y + offset_y))
-                        enemy = Enemy(self.weapons, self.players, pos=(enemy_x, enemy_y))
-                        self.enemies.append(enemy)
+                        max_enemy_attempts = 30
+                        for attempt in range(max_enemy_attempts):
+                            offset_x = random.randint(-80, 80)
+                            offset_y = random.randint(-80, 80)
+                            enemy_x = max(0, min(world_w - 40, x + offset_x))
+                            enemy_y = max(0, min(world_h - 40, y + offset_y))
+                            temp_enemy = Enemy(self.weapons, self.players, pos=(enemy_x, enemy_y))
+                            overlaps = any(temp_enemy.rect.colliderect(e.rect.inflate(-10, -10)) for e in self.enemies)
+
+                            too_close_to_players = any(
+                                (temp_enemy.rect.centerx - p.rect.centerx) ** 2 + (
+                                            temp_enemy.rect.centery - p.rect.centery) ** 2 < ENEMY_CONFIG[
+                                    "min_spawn_distance"] ** 2
+                                for p in self.players
+                            )
+                            if not overlaps and not too_close_to_players:
+                                self.enemies.append(temp_enemy)
+                                break
                     break
 
     def handle_event(self, event):
@@ -114,12 +132,13 @@ class LevelScene:
             return
 
         for player in self.players:
-            player.handle_keys()
+            player.handle_keys(self.level_data["world_size"][0],
+                               self.level_data["world_size"][1])
             player.pickup_weapon(self.weapons)
             player.update()
 
         for enemy in self.enemies:
-            enemy.update(self.players)
+            enemy.update(self.players, self.level_data["world_size"])
 
         self.bullets.update()
         for bullet in self.bullets:
@@ -144,7 +163,6 @@ class LevelScene:
                     SceneManager.get_instance().add("win", WinScene(winner_index, level_scene_name=self.level_id))
                     SceneManager.get_instance().set_scene("win")
                     return
-
 
     def render(self, screen):
         if self.winner_scene:

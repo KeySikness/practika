@@ -1,7 +1,7 @@
 import pygame as py
 import os
 import random
-from config import CONSTANTS
+from config import CONSTANTS, LEVELS_DIR
 
 ENEMY_CONFIG = CONSTANTS["enemy"]
 
@@ -29,7 +29,7 @@ class Enemy(py.sprite.Sprite):
             default_image.fill((100, 100, 100))
             cls.enemy_images.append(default_image)
 
-    def __init__(self, weapons, players, pos=None):
+    def __init__(self, weapons, players, existing_enemies=None, pos=None):
         super().__init__()
         Enemy.load_images()
         self.image = random.choice(Enemy.enemy_images)
@@ -38,7 +38,7 @@ class Enemy(py.sprite.Sprite):
         if pos is not None:
             self.rect.center = pos
         else:
-            self.spawn_near_weapon(weapons, players)
+            self.spawn_near_weapon(weapons, players, existing_enemies or [])
 
         self.speed = ENEMY_CONFIG["speed"]
         health_min, health_max = ENEMY_CONFIG["health_range"]
@@ -49,33 +49,34 @@ class Enemy(py.sprite.Sprite):
         self.stunned = False
         self.stun_end_time = 0
 
-    def spawn_near_weapon(self, weapons, players):
+    def spawn_near_weapon(self, weapons, players, other_enemies):
         min_dist = ENEMY_CONFIG["min_spawn_distance"]
-        max_attempts = 20
+        max_attempts = 30
         attempts = 0
 
         while attempts < max_attempts:
             if not weapons:
                 self.rect.topleft = (random.randint(100, 700), random.randint(100, 500))
-                return
+            else:
+                weapon = random.choice(weapons)
+                wx, wy = weapon.rect.center
+                offset_x = random.randint(-100, 100)
+                offset_y = random.randint(-100, 100)
+                self.rect.center = (wx + offset_x, wy + offset_y)
 
-            weapon = random.choice(weapons)
-            wx, wy = weapon.rect.center
-            offset_x = random.randint(-100, 100)
-            offset_y = random.randint(-100, 100)
-            self.rect.center = (wx + offset_x, wy + offset_y)
-
-            too_close = any(
-                (self.rect.centerx - p.rect.centerx)**2 + (self.rect.centery - p.rect.centery)**2 < min_dist**2
+            too_close_to_players = any(
+                (self.rect.centerx - p.rect.centerx) ** 2 + (self.rect.centery - p.rect.centery) ** 2 < min_dist ** 2
                 for p in players
             )
-            if not too_close:
-                return
-            attempts += 1
+            overlaps_other_enemies = any(self.rect.colliderect(e.rect.inflate(-10, -10)) for e in other_enemies)
 
+            if not too_close_to_players and not overlaps_other_enemies:
+                return
+
+            attempts += 1
         self.rect.topleft = (random.randint(100, 700), random.randint(100, 500))
 
-    def update(self, players):
+    def update(self, players, world_size):
         now = py.time.get_ticks()
         if self.stunned and now >= self.stun_end_time:
             self.stunned = False
@@ -88,23 +89,26 @@ class Enemy(py.sprite.Sprite):
 
         closest_player = min(
             players,
-            key=lambda p: (p.rect.centerx - self.rect.centerx)**2 + (p.rect.centery - self.rect.centery)**2
+            key=lambda p: (p.rect.centerx - self.rect.centerx) ** 2 + (p.rect.centery - self.rect.centery) ** 2
         )
 
         dx = closest_player.rect.centerx - self.rect.centerx
         dy = closest_player.rect.centery - self.rect.centery
-        distance = (dx**2 + dy**2) ** 0.5
+        distance = (dx ** 2 + dy ** 2) ** 0.5
 
         if distance != 0:
             dx /= distance
             dy /= distance
             self.rect.move_ip(dx * self.speed, dy * self.speed)
 
+        world_w, world_h = world_size
+        self.rect.x = max(0, min(self.rect.x, world_w - self.rect.width))
+        self.rect.y = max(0, min(self.rect.y, world_h - self.rect.height))
+
         now = py.time.get_ticks()
         if self.rect.colliderect(closest_player.rect) and now - self.last_attack_time > self.attack_delay:
             closest_player.health -= self.damage
             self.last_attack_time = now
-
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)

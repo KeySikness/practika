@@ -1,5 +1,6 @@
 import pygame
 import sys
+from audio_manager import AudioManager
 pygame.init()
 
 clock = pygame.time.Clock()
@@ -9,7 +10,6 @@ BUTTON_HOVER_COLOR = (130, 52, 52)
 TEXT_COLOR = (0, 0, 0)
 FONT = pygame.font.SysFont("Comic Sans MS", 48)
 
-# hover_sound = pygame.mixer.Sound("assets\hover.mp3")
 # background_image = pygame.transform.scale(pygame.image.load(" "), (WIDTH, HEIGHT)) # После выбора картинки для заставки
 
 window = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -45,10 +45,11 @@ class MainMenuScene:
         self.next_scene = next_scene
         self.play_button = None
         self.exit_button = None
-        self.window_size = (1600, 900)  # default fallback
+        self.window_size = (1600, 900)
 
     def on_enter(self):
         self.update_layout(self.window_size)
+        AudioManager.get_instance().play_music(AudioManager.get_instance().tracks["menu"])
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:

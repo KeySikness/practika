@@ -8,6 +8,8 @@ from src.scenes.level_scene import LevelScene
 from config import CONSTANTS, LEVELS_DIR
 from src.scenes.menu import MainMenuScene
 from src.scenes.introduction import IntroductionScene
+from src.scenes.controls_guide import ControlsInfoScene
+
 
 def main():
     py.init()
@@ -20,7 +22,8 @@ def main():
     scene_manager = SceneManager.get_instance()
 
     scene_manager.add("main_menu", MainMenuScene(next_scene="introduction"))
-    scene_manager.add("introduction", IntroductionScene(next_scene="character_select"))
+    scene_manager.add("introduction", IntroductionScene(next_scene="controls_guide"))
+    scene_manager.add("controls_guide", ControlsInfoScene(next_scene="character_select"))
     scene_manager.add("character_select", character_select.CharacterSelect(default_next="level1"))
 
     for file in os.listdir(LEVELS_DIR):

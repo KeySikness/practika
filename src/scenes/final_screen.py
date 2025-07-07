@@ -1,6 +1,7 @@
 import pygame
 from src.scenes.menu import Button
 from scene_manager import SceneManager
+from audio_manager import AudioManager
 
 class WinScene:
     def __init__(self, winner_index, level_scene_name="level", menu_scene_name="main_menu"):
@@ -12,6 +13,8 @@ class WinScene:
         self.window_size = (1600, 900)
 
     def on_enter(self):
+        self.update_layout(self.window_size)
+        AudioManager.get_instance().fadeout_music(1000)
         self.update_layout(self.window_size)
 
     def update_layout(self, window_size):
