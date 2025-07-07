@@ -75,16 +75,25 @@ class MolotovEffect:
                         target.health -= self.burn_damage
                 self.last_burn_time = now
 
-    def draw(self, surface):
+    def draw(self, surface, scale_func=None):
+        pos = self.position
+        if scale_func:
+            pos = scale_func(self.position)
         if self.state == 'waiting':
-            py.draw.circle(surface, (255, 100, 0), self.position, 10)
+            py.draw.circle(surface, (255, 100, 0), pos, 10)
         elif self.state == 'active':
-            s = py.Surface((self.radius * 2, self.radius * 2), py.SRCALPHA)
-            py.draw.circle(s, (255, 0, 0, 100), (self.radius, self.radius), self.radius)
-            surface.blit(s, (self.position[0] - self.radius, self.position[1] - self.radius))
+            radius_scaled = self.radius
+            if scale_func:
+                sx = scale_func((self.position[0] + self.radius, self.position[1]))[0] - pos[0]
+                sy = scale_func((self.position[0], self.position[1] + self.radius))[1] - pos[1]
+                radius_scaled = int((sx + sy) / 2)
+            s = py.Surface((radius_scaled * 2, radius_scaled * 2), py.SRCALPHA)
+            py.draw.circle(s, (255, 0, 0, 100), (radius_scaled, radius_scaled), radius_scaled)
+            surface.blit(s, (pos[0] - radius_scaled, pos[1] - radius_scaled))
+
 
 class Boomerang(py.sprite.Sprite):
-    def __init__(self, start_pos, owner, damage=8, max_time=1500):
+    def __init__(self, start_pos, owner, damage=5, max_time=1500):
         super().__init__()
         self.image = py.Surface((20, 20), py.SRCALPHA)
         py.draw.polygon(self.image, (0, 200, 255), [(10, 0), (20, 10), (10, 20), (0, 10)])
@@ -103,7 +112,7 @@ class Boomerang(py.sprite.Sprite):
         self.returning = False
 
         self.last_hit_times = {}
-        self.hit_interval = 80  # мс между ударами
+        self.hit_interval = 100  # мс между ударами
 
     def update(self):
         now = py.time.get_ticks()

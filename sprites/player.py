@@ -22,13 +22,25 @@ class Player:
         self.stunned = False
         self.stun_end_time = 0
         self.weapon_in_use = False
+        self.last_dropped_weapon_time = 0
+        self.drop_cooldown_ms = 500
 
     def pickup_weapon(self, weapons):
-        for weapon in weapons[:]:  # Скопируем список для предотвращения изменений в процессе итерации
+        now = py.time.get_ticks()
+        for weapon in weapons[:]:
             if self.rect.colliderect(weapon.rect):
+                if now - self.last_dropped_weapon_time < self.drop_cooldown_ms:
+                    continue
+
                 if len(self.inventory) < self.inventory_limit:
-                    self.inventory.append(weapon)
                     weapons.remove(weapon)
+
+                    if len(self.inventory) == 1 and self.inventory[0].weapon_type == "fist":
+                        self.inventory.pop(0)
+
+                    self.inventory.append(weapon)
+                    self.current_weapon_index = len(self.inventory) - 1
+                    self.weapon = self.inventory[self.current_weapon_index]
 
     def switch_weapon(self, direction):
         if not self.inventory:
@@ -104,4 +116,60 @@ class Player:
             rotated_image = py.transform.rotate(weapon_image, -self.facing_angle)
             weapon_rect = rotated_image.get_rect(center=self.rect.center)
             surface.blit(rotated_image, weapon_rect.topleft)
+
+    def draw_scaled(self, surface, scale_func):
+        scaled_pos = scale_func(self.rect.topleft)
+        scaled_size = (
+            int(self.rect.width * scale_func((1, 0))[0]),
+            int(self.rect.height * scale_func((0, 1))[1])
+        )
+        scaled_rect = py.Rect(scaled_pos, scaled_size)
+
+        py.draw.rect(surface, self.color, scaled_rect)
+
+        font = py.font.SysFont(None, 20)
+        name_text = font.render(f"{self.name} - HP: {self.health}", True, (255, 255, 255))
+        surface.blit(name_text, (scaled_rect.x, scaled_rect.y - 30))
+
+        weapon_name = "Без оружия"
+        if self.weapon:
+            weapon_data = CONSTANTS["weapons"]["stats"].get(self.weapon.weapon_type)
+            if weapon_data:
+                weapon_name = weapon_data.get("name", self.weapon.weapon_type)
+
+        weapon_text = font.render(weapon_name, True, (255, 255, 0))
+        surface.blit(weapon_text, (scaled_rect.x, scaled_rect.y - 15))
+
+        weapon = self.get_current_weapon()
+        if weapon:
+            weapon_image = weapon.image
+            rotated_image = py.transform.rotate(weapon_image, -self.facing_angle)
+
+            scaled_center = (
+                scaled_rect.x + scaled_rect.width // 2,
+                scaled_rect.y + scaled_rect.height // 2
+            )
+            weapon_rect = rotated_image.get_rect(center=scaled_center)
+            surface.blit(rotated_image, weapon_rect.topleft)
+
+    def drop_weapon(self, weapons_on_map):
+        weapon = self.get_current_weapon()
+        if not weapon or weapon.weapon_type == "fist":
+            return
+
+        dropped_weapon = Weapon(self.rect.centerx, self.rect.centery, weapon.weapon_type)
+        weapons_on_map.append(dropped_weapon)
+        self.inventory.pop(self.current_weapon_index)
+
+        if self.inventory:
+            self.current_weapon_index %= len(self.inventory)
+        else:
+            self.inventory.append(Weapon(self.rect.x, self.rect.y, "fist"))
+            self.current_weapon_index = 0
+
+        self.weapon = self.inventory[self.current_weapon_index]
+        self.last_dropped_weapon_time = py.time.get_ticks()
+
+
+
 

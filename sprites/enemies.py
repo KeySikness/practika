@@ -108,3 +108,16 @@ class Enemy(py.sprite.Sprite):
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)
+
+    def draw_scaled(self, surface, scale_func):
+        scaled_pos = scale_func(self.rect.topleft)
+        scale_x = scale_func((1, 0))[0]
+        scale_y = scale_func((0, 1))[1]
+        scaled_size = (int(self.rect.width * scale_x), int(self.rect.height * scale_y))
+
+        scaled_image = py.transform.scale(self.image, scaled_size)
+        surface.blit(scaled_image, scaled_pos)
+
+        font = py.font.SysFont(None, 20)
+        hp_text = font.render(f"HP: {self.health}", True, (255, 0, 0))
+        surface.blit(hp_text, (scaled_pos[0], scaled_pos[1] - 20))

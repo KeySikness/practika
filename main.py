@@ -6,10 +6,11 @@ from scene_manager import SceneManager
 from src.scenes import character_select
 from src.scenes.level_scene import LevelScene
 from config import CONSTANTS, LEVELS_DIR
+from src.scenes.menu import MainMenuScene
+from src.scenes.introduction import IntroductionScene
 
 def main():
     py.init()
-
     screen_config = CONSTANTS["screen"]
     screen_size = (screen_config["width"], screen_config["height"])
     screen = py.display.set_mode(screen_size, py.RESIZABLE)
@@ -18,14 +19,18 @@ def main():
 
     scene_manager = SceneManager.get_instance()
 
+    scene_manager.add("main_menu", MainMenuScene(next_scene="introduction"))
+    scene_manager.add("introduction", IntroductionScene(next_scene="character_select"))
+    scene_manager.add("character_select", character_select.CharacterSelect(default_next="level1"))
+
     for file in os.listdir(LEVELS_DIR):
         if file.endswith(".json"):
             level_id = file.replace(".json", "")
             scene = LevelScene(level_id)
             scene_manager.add(level_id, scene)
 
-    scene_manager.add("character_select", character_select.CharacterSelect(default_next="level1"))
-    scene_manager.set_scene("character_select")
+
+    scene_manager.set_scene("main_menu")
 
     running = True
     while running:
@@ -39,7 +44,6 @@ def main():
             scene_manager.handle_event(event)
 
         scene_manager.update()
-
         if hasattr(scene_manager.current_scene, 'update_layout'):
             scene_manager.current_scene.update_layout(screen_size)
 

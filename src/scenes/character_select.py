@@ -1,18 +1,21 @@
-import pygame as py
+import pygame
 from scene_manager import SceneManager
 
 class Button:
     def __init__(self, rect, text, callback):
-        self.rect = py.Rect(rect)
+        self.rect = pygame.Rect(rect)
         self.text = text
         self.callback = callback
-        self.font = py.font.SysFont(None, 36)
+        self.font = pygame.font.SysFont(None, 36)
         self.hover = False
+
+    def set_position(self, rect):
+        self.rect = pygame.Rect(rect)
 
     def draw(self, surface):
         color = (180, 180, 180) if self.hover else (120, 120, 120)
-        py.draw.rect(surface, color, self.rect)
-        py.draw.rect(surface, (255, 255, 255), self.rect, 2)
+        pygame.draw.rect(surface, color, self.rect)
+        pygame.draw.rect(surface, (255, 255, 255), self.rect, 2)
         text_surf = self.font.render(self.text, True, (255, 255, 255))
         surface.blit(
             text_surf,
@@ -23,39 +26,39 @@ class Button:
         )
 
     def handle_event(self, event):
-        if event.type == py.MOUSEMOTION:
+        if event.type == pygame.MOUSEMOTION:
             self.hover = self.rect.collidepoint(event.pos)
-        elif event.type == py.MOUSEBUTTONDOWN:
+        elif event.type == pygame.MOUSEBUTTONDOWN:
             if self.rect.collidepoint(event.pos):
                 self.callback()
 
 
 class CharacterSelect:
     def __init__(self, default_next="level1"):
-        self.font = py.font.SysFont(None, 40)
+        self.font = pygame.font.SysFont(None, 40)
         self.player1_choice = None
         self.player2_choice = None
         self.current_player = 1
         self.next_level_id = default_next
         self.buttons = []
-        self.make_buttons()
+        self.window_size = (1600, 900)
 
     def make_buttons(self):
         self.buttons = []
         w, h = 200, 60
         spacing = 30
-        start_x = 300
-        start_y = 200
+        start_x = self.window_size[0] // 2 - w // 2
+        start_y = self.window_size[1] // 2 - (h + spacing)
 
-        def make_button(text, gender):
+        def make_button(text, gender, index):
             return Button(
-                (start_x, start_y + len(self.buttons) * (h + spacing), w, h),
+                (start_x, start_y + index * (h + spacing), w, h),
                 text,
                 lambda g=gender: self.select(g),
             )
 
-        self.buttons.append(make_button("женщина", "woman"))
-        self.buttons.append(make_button("мужчина", "man"))
+        self.buttons.append(make_button("женщина", "woman", 0))
+        self.buttons.append(make_button("мужчина", "man", 1))
 
     def select(self, gender):
         if self.current_player == 1:
@@ -74,6 +77,10 @@ class CharacterSelect:
         self.player1_choice = None
         self.player2_choice = None
         self.current_player = 1
+        self.make_buttons()
+
+    def update_layout(self, window_size):
+        self.window_size = window_size
         self.make_buttons()
 
     def handle_event(self, event):
