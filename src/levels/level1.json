@@ -1,10 +1,13 @@
 {
   "id": "level1",
-  "world_size": [800, 600],
-  "background_color": [40, 40, 40],
+  "world_size": [5120, 2880],
+  "map": {
+    "background": "assets/images/map/level1/background.png",
+    "walls": "assets/images/map/level1/walls.png"
+  },
   "player_spawn": {
-    "player1": [50, 550],
-    "player2": [750, 50]
+    "player1": [430, 1890],
+    "player2": [4670, 1050]
   },
   "weapons": [],
   "enemies": []

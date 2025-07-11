@@ -2,9 +2,11 @@ import pygame as py
 import random
 import json
 import os
+
 from sprites.player import Player
 from sprites.enemies import Enemy
 from sprites.weapons import Weapon
+from sprites.map import Map
 from sprites.projectiles import MolotovEffect
 from config import CONSTANTS, LEVELS_DIR
 from audio_manager import AudioManager
@@ -20,6 +22,7 @@ class LevelScene:
         self.effects = []
         self.bullets = py.sprite.Group()
         self.level_data = {}
+        self.load_level_data()
         self.finished = False
         self.winner_scene = None
 
@@ -27,14 +30,20 @@ class LevelScene:
         self.scale_x = 1
         self.scale_y = 1
 
-        self.load_level_data()
-        self.finished = False
         self.playing_track = AudioManager.get_instance().play_random_level_music()
+
+        self.load_map()
 
     def load_level_data(self):
         level_file = os.path.join(LEVELS_DIR, f"{self.level_id}.json")
         with open(level_file, "r", encoding="utf-8") as f:
             self.level_data = json.load(f)
+
+    def load_map(self):
+        self.map = Map(self.level_data["map"])
+
+    def is_point_inside_map(self, x, y):
+        return self.map.is_walkable(x, y)
 
     def on_enter(self):
         self.finished = False
@@ -62,12 +71,13 @@ class LevelScene:
         self.weapons.clear()
         self.enemies.clear()
 
-        num_weapons = random.randint(3, 8)
+        num_weapons = random.randint(3, 20)
         placed_positions = []
 
         world_w, world_h = self.level_data["world_size"]
 
         for _ in range(num_weapons):
+            import pygame as py
             for _ in range(100):
                 x = random.randint(32, world_w - 32)
                 y = random.randint(32, world_h - 32)
@@ -77,31 +87,51 @@ class LevelScene:
                        placed_positions) and \
                         all(not new_rect.colliderect(p.rect.inflate(100, 100)) for p in self.players):
 
-                    placed_positions.append((x, y))
-                    weapon_type = random.choice([w for w in CONSTANTS["weapons"]["types"] if w != "fist"])
-                    weapon = Weapon(x, y, weapon_type=weapon_type)
-                    self.weapons.append(weapon)
+                    points_to_check = [
+                        (x + 16, y + 16), # центр
+                        (x, y), # верх лев
+                        (x + 31, y), # верх прав
+                        (x, y + 31), # ниж лев
+                        (x + 31, y + 31) # ниж прав
+                    ]
 
-                    for _ in range(random.randint(1, 3)):
-                        max_enemy_attempts = 30
-                        for attempt in range(max_enemy_attempts):
-                            offset_x = random.randint(-80, 80)
-                            offset_y = random.randint(-80, 80)
-                            enemy_x = max(0, min(world_w - 40, x + offset_x))
-                            enemy_y = max(0, min(world_h - 40, y + offset_y))
-                            temp_enemy = Enemy(self.weapons, self.players, pos=(enemy_x, enemy_y))
-                            overlaps = any(temp_enemy.rect.colliderect(e.rect.inflate(-10, -10)) for e in self.enemies)
+                    if all(self.map.is_walkable(px, py) for px, py in points_to_check):
+                        placed_positions.append((x, y))
+                        weapon_type = random.choice([w for w in CONSTANTS["weapons"]["types"] if w != "fist"])
+                        weapon = Weapon(x, y, weapon_type=weapon_type)
+                        self.weapons.append(weapon)
 
-                            too_close_to_players = any(
-                                (temp_enemy.rect.centerx - p.rect.centerx) ** 2 + (
-                                            temp_enemy.rect.centery - p.rect.centery) ** 2 < ENEMY_CONFIG[
-                                    "min_spawn_distance"] ** 2
-                                for p in self.players
-                            )
-                            if not overlaps and not too_close_to_players:
-                                self.enemies.append(temp_enemy)
-                                break
-                    break
+                        for _ in range(random.randint(1, 3)):
+                            max_enemy_attempts = 30
+                            for attempt in range(max_enemy_attempts):
+                                offset_x = random.randint(-80, 80)
+                                offset_y = random.randint(-80, 80)
+                                enemy_x = max(0, min(world_w - 40, x + offset_x))
+                                enemy_y = max(0, min(world_h - 40, y + offset_y))
+
+                                enemy_points = [
+                                    (enemy_x + 20, enemy_y + 20),
+                                    (enemy_x, enemy_y),
+                                    (enemy_x + 39, enemy_y),
+                                    (enemy_x, enemy_y + 39),
+                                    (enemy_x + 39, enemy_y + 39)
+                                ]
+                                if not all(self.map.is_walkable(px, py) for px, py in enemy_points):
+                                    continue
+
+                                temp_enemy = Enemy(self.weapons, self.players, pos=(enemy_x, enemy_y))
+                                overlaps = any(
+                                    temp_enemy.rect.colliderect(e.rect.inflate(-10, -10)) for e in self.enemies)
+                                too_close_to_players = any(
+                                    (temp_enemy.rect.centerx - p.rect.centerx) ** 2 + (
+                                                temp_enemy.rect.centery - p.rect.centery) ** 2 < ENEMY_CONFIG[
+                                        "min_spawn_distance"] ** 2
+                                    for p in self.players
+                                )
+                                if not overlaps and not too_close_to_players:
+                                    self.enemies.append(temp_enemy)
+                                    break
+                        break
 
     def handle_event(self, event):
         if self.winner_scene:
@@ -132,13 +162,25 @@ class LevelScene:
             return
 
         for player in self.players:
-            player.handle_keys(self.level_data["world_size"][0],
-                               self.level_data["world_size"][1])
+            player.handle_keys()
             player.pickup_weapon(self.weapons)
+            original_rect = player.rect.copy()
+            player.rect.x += player.dx
+            player.rect.y += player.dy
+
+            corners = [
+                player.rect.topleft,
+                player.rect.topright,
+                player.rect.bottomleft,
+                player.rect.bottomright
+            ]
+
+            if not all(self.is_point_inside_map(x, y) for (x, y) in corners):
+                player.rect = original_rect
             player.update()
 
         for enemy in self.enemies:
-            enemy.update(self.players, self.level_data["world_size"])
+            enemy.update(self.players, self.level_data["world_size"], self.map)
 
         self.bullets.update()
         for bullet in self.bullets:
@@ -154,7 +196,6 @@ class LevelScene:
         alive_players = [p for p in self.players if p.health > 0]
         if len(alive_players) == 1 and not self.finished:
             self.finished = True
-            winner_index = self.players.index(alive_players[0]) + 1  # 1 или 2
             for i, player in enumerate(self.players):
                 if player.health <= 0:
                     from scene_manager import SceneManager
@@ -169,31 +210,49 @@ class LevelScene:
             self.winner_scene.render(screen)
             return
 
-        bg_color = tuple(self.level_data.get("background_color", (40, 40, 40)))
-        screen.fill(bg_color)
+        screen.fill((0, 0, 0))
 
-        for enemy in self.enemies:
-            enemy.draw_scaled(screen, self.scale_pos)
+        screen_w, screen_h = self.window_size
+        half_width = screen_w // 2
+        world_w, world_h = self.level_data["world_size"]
 
-        for weapon in self.weapons:
-            pos = self.scale_pos(weapon.rect.topleft)
-            rect = weapon.image.get_rect(topleft=pos)
-            screen.blit(weapon.image, rect)
+        views = [(0, self.players[0]), (half_width, self.players[1])]
 
-        for player in self.players:
-            player.draw_scaled(screen, self.scale_pos)
+        for x_offset, player in views:
+            camera_offset = self.get_camera_offset(player.rect, (half_width, screen_h), (world_w, world_h))
 
-        for bullet in self.bullets:
-            pos = self.scale_pos(bullet.rect.topleft)
-            rect = bullet.image.get_rect(topleft=pos)
-            screen.blit(bullet.image, rect)
+            view_surface = py.Surface((half_width, screen_h))
+            view_surface.fill(self.level_data.get("background_color", (40, 40, 40)))
 
-        for eff in self.effects[:]:
-            if hasattr(eff, 'draw'):
-                if isinstance(eff, MolotovEffect):
-                    eff.draw(screen, self.scale_pos)
-                else:
-                    eff.draw(screen)
+            self.map.draw(view_surface, -camera_offset)
+
+            for weapon in self.weapons:
+                pos = py.Vector2(weapon.rect.topleft) - camera_offset
+                weapon.draw_on_map(view_surface, pos=pos)
+
+            for bullet in self.bullets:
+                pos = py.Vector2(bullet.rect.topleft) - camera_offset
+                view_surface.blit(bullet.image, pos)
+
+            for enemy in self.enemies:
+                enemy.draw(view_surface, camera_offset)
+
+            for eff in self.effects:
+                if hasattr(eff, "draw"):
+                    if isinstance(eff, MolotovEffect):
+                        eff.draw(view_surface, lambda p: (p[0] - camera_offset.x, p[1] - camera_offset.y))
+                    else:
+                        eff.draw(view_surface)
+
+            for p in self.players:
+                if p.health > 0:
+                    original_rect = p.rect.copy()
+                    p.rect = p.rect.move(-camera_offset.x, -camera_offset.y)
+                    p.draw(view_surface)
+                    p.rect = original_rect
+
+            screen.blit(view_surface, (x_offset, 0))
+        py.draw.line(screen, (255, 255, 255), (half_width, 0), (half_width, screen_h), 2)
 
     def restart_level(self):
         self.set_player_choices(self.players[0].gender, self.players[1].gender)
@@ -204,5 +263,14 @@ class LevelScene:
         from scene_manager import SceneManager
         manager = SceneManager.get_instance()
         manager.set_scene("main_menu")
+
+    def get_camera_offset(self, target_rect, screen_size, world_size):
+        cam_x = target_rect.centerx - screen_size[0] // 2
+        cam_y = target_rect.centery - screen_size[1] // 2
+        cam_x = max(0, min(cam_x, world_size[0] - screen_size[0]))
+        cam_y = max(0, min(cam_y, world_size[1] - screen_size[1]))
+
+        return py.Vector2(cam_x, cam_y)
+
 
 

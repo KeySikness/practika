@@ -1,16 +1,16 @@
 {
   "player_stats": {
     "woman": {
-      "speed": 5,
+      "speed": 4,
       "health": 70,
-      "color": [255, 100, 100],
-      "inventory_limit": 2
+      "inventory_limit": 2,
+      "image": "assets/images/animation/woman.png"
     },
     "man": {
       "speed": 3,
       "health": 100,
-      "color": [100, 100, 255],
-      "inventory_limit": 3
+      "inventory_limit": 3,
+      "image": "assets/images/animation/man.png"
     }
   },
   "screen": {
@@ -19,25 +19,57 @@
   },
   "FPS": 60,
   "enemy": {
-    "size": 40,
+    "size": 32,
+    "scale": 2.0,
     "attack_delay": 1000,
     "min_spawn_distance": 150,
-    "speed": 1.5,
+    "speed": 2,
     "health_range": [3, 15],
-    "damage": 1
+    "damage": 1,
+    "image": "assets/images/animation/enemy.png"
   },
   "weapons": {
     "types": ["fist", "melee_bat", "melee_axe", "melee_knife", "melee_club", "shotgun", "molotov", "boomerang", "yoyo"],
     "stats": {
       "fist":          { "name": "кулаки", "damage": 1, "cooldown": 500 },
-      "melee_bat":   { "name": "бита","damage": 5, "cooldown": 800 },
-      "melee_axe":     { "name": "топор","damage": 10, "cooldown": 1000 },
-      "melee_knife":   { "name": "нож","damage": 2, "cooldown": 500 },
-      "melee_club":    { "name": "клюшка","damage": 3, "cooldown": 800 },
-      "shotgun":       { "name": "ружье","damage": 5, "cooldown": 1200 },
-      "molotov":       { "name": "молотов","damage": 5, "cooldown": 800 },
-      "boomerang":     { "name": "бумеранг","damage": 1, "cooldown": 700 },
-      "yoyo":          { "name": "йо-йо","damage": 1, "cooldown": 1200 }
+      "melee_bat":   { "name": "бита","damage": 5, "cooldown": 800, "size": [100, 50], "image": "assets/images/weapon/bat.png" },
+      "melee_axe":     { "name": "топор","damage": 10, "cooldown": 1000, "size": [100, 70], "image": "assets/images/weapon/axe.png" },
+      "melee_knife":   { "name": "нож","damage": 2, "cooldown": 500, "size": [55, 50], "image": "assets/images/weapon/knife.png"},
+      "melee_club":    { "name": "клюшка","damage": 3, "cooldown": 800, "size": [110, 70],"image": "assets/images/weapon/club.png" },
+      "shotgun": { "name": "ружье", "damage": 5, "cooldown": 1200, "spread_angles": [-20, -7, 7, 20], "speed": 10, "size": [150, 120], "image": "assets/images/weapon/shotgun.png",
+        "projectile": {
+          "size": [5, 5],
+          "color": [255, 255, 0]
+        }
+      },
+      "molotov": {"name": "молотов", "damage": 5, "cooldown": 800, "image": "assets/images/weapon/molotov.png", "explosion": "assets/images/weapon/explosion.png",
+        "projectile": {
+          "explosion_damage": 5,
+          "burn_damage": 1,
+          "explosion_delay": 800,
+          "fire_duration": 3000,
+          "radius": 100,
+          "burn_interval": 300
+        }
+      },
+      "boomerang": { "name": "бумеранг", "damage": 1, "cooldown": 700, "image": "assets/images/weapon/boomerang.png",
+        "projectile": {
+          "size": [35, 35],
+          "max_time": 1500,
+          "speed": 5,
+          "angular_speed": 0.2,
+          "hit_interval": 100
+        }
+      },
+      "yoyo": { "name": "йо-йо", "damage": 1, "cooldown": 1200, "image": "assets/images/weapon/yoyo.png",
+        "projectile": {
+          "size": [30, 30],
+          "max_distance": 200,
+          "speed": 10,
+          "stun_duration": 1200,
+          "pull_speed": 30
+        }
+      }
+    }
   }
-}
 }
